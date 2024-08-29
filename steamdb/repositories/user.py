@@ -16,7 +16,13 @@ class UserRepository(object):
             {"access_token": self.access_token, "steamids": [steamid]}
         )
 
-        return self.__create_user(response[0])
+        if not len(response):
+            raise Exception("User %s not found" % steamid)
+
+        try:
+            return self.__create_user(response[0])
+        except Exception as xcp:
+            raise xcp
 
     def get_many_user(self, steamids: list[str]) -> list[User]:
         response = self.__create_request(
@@ -40,13 +46,16 @@ class UserRepository(object):
         return r.json()["players"]
 
     def __create_user(self, user: dict) -> User:
-        return User(
-            steamid=user["steamid"],
-            community_visibility_state=user["communityvisibilitystate"],
-            loccountrycode=user["loccountrycode"],
-            time_created=self.__time_created(user["timecreated"]),
-            library=self.library_repo.get_user_game_library(user["steamid"]),
-        )
+        try:
+            return User(
+                steamid=user["steamid"],
+                community_visibility_state=user["communityvisibilitystate"],
+                loccountrycode=user["loccountrycode"],
+                time_created=self.__time_created(user["timecreated"]),
+                library=self.library_repo.get_user_game_library(user["steamid"]),
+            )
+        except Exception as xcp:
+            xcp.add_note("Error to create user with SteamID: %s" % user["steamid"])
 
     def __time_created(self, timestamp: int) -> datetime:
         return datetime.fromtimestamp(timestamp)
