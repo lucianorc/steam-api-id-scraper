@@ -1,51 +1,32 @@
-from dataclasses import dataclass, field
-
-import requests
-
-from steamdb.repositories.app import AppRepository
-from steamdb.models import App, GameLibrary
+from steamdb.api.client import APIClient, StoreClient
+from steamdb.entities import App, GameLibrary
+from steamdb.models import GameLibraryModel
+from steamdb.repositories import AppRepository
 
 
-@dataclass
-class LibraryRepository(object):
-    key: str = "D5F90A4D67793F987CFF390E7641A722"
-    app_repo: AppRepository = field(default_factory=AppRepository)
+class GameLibraryRepository(object):
+    def __init__(self, client: APIClient) -> None:
+        self.lib_model = GameLibraryModel(client)
+        self.app_repo = AppRepository(StoreClient())
 
-    def __create_request(self, payload: dict) -> any:
-        r = requests.get(
-            "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001",
-            params=payload,
+    def __create_entity(self, lib: GameLibrary) -> GameLibrary:
+        return GameLibrary(
+            game_count=lib["game_count"],
+            games=self.__create_game_entity_list(lib["games"]),
         )
 
-        if r.status_code != 200:
-            raise Exception("Games from User %s not found" % self.steamid)
+    def __create_game_entity_list(self, games: list) -> list[App]:
+        game_entities = list()
+        for game in games[:2]:
+            app_id = str(game["appid"])
 
-        return r.json()["response"]
+            game_entity = self.app_repo.get_app_info(app_id)
+            if game_entity.is_game:
+                game_entities.append(game_entity)
 
-    def get_user_game_library(self, user_id: str) -> GameLibrary:
-        response = self.__create_request(
-            payload={
-                "key": self.key,
-                "steamid": user_id,
-                "format": "json",
-            }
-        )
+        return game_entities
 
-        game_library = GameLibrary()
-        game_library.game_count = response["game_count"]
-
-        for obj in response["games"][:20]:
-            app_id = str(obj["appid"])
-            try:
-                return self.__get_game(app_id)
-            except:
-                pass
-
-        return game_library
-
-    def __get_game(self, app_id: str) -> App | None:
-        app = self.app_repo.app_info(app_id)
-        if app.is_game():
-            return app
-
-        return None
+    def get_user_library(self, user_id: str) -> GameLibrary:
+        lib = self.lib_model.get_user_library(user_id)
+        lib_entity = self.__create_entity(lib)
+        return lib_entity
