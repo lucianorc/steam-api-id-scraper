@@ -1,28 +1,12 @@
-from datetime import datetime
-from dataclasses import dataclass, field
+from steamdb.api.client import StoreClient
+from .base import BaseModel
+from steamdb.entities import App
 
 
-@dataclass
-class AppCategory(object):
-    id: int
-    description: str
+class AppModel(BaseModel):
+    def __init__(self, client: StoreClient):
+        super().__init__(client.app_resource, client.session)
 
-
-@dataclass
-class AppGenre(object):
-    id: int
-    description: str
-
-
-@dataclass
-class App(object):
-    appid: int
-    type: str = field(default_factory=str)
-    free: bool = field(default_factory=bool)
-    name: str = field(default_factory=str)
-    categories: list[AppCategory] = field(default_factory=list)
-    genres: list[AppGenre] = field(default_factory=list)
-    release_date: datetime = field(default=None)
-
-    def is_game(self):
-        return self.type == "game"
+    def get_app_info(self, app_id: str) -> App:
+        response = self.api_session.get(self.url, params={"appids": app_id})
+        return response.json()[app_id]["data"]

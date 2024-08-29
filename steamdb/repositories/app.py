@@ -1,41 +1,28 @@
-from dataclasses import dataclass
 from datetime import datetime
-import requests
 
-from steamdb.models import App
-from steamdb.models.app import AppCategory, AppGenre
+from steamdb.api.client import StoreClient
+from steamdb.entities.app import AppCategory, AppGenre
+from steamdb.models import AppModel
+from steamdb.entities import App
+from steamdb.entities.app import AppCategory, AppGenre
 
 
-@dataclass
 class AppRepository(object):
-    base_url: str = "http://store.steampowered.com/api/appdetails"
+    app_model: AppModel
 
-    def app_info(self, appid: str) -> App:
-        response = self.__create_request({"appids": appid})
-        return self.__create_app(response)
+    def __init__(self, client: StoreClient):
+        self.app_model = AppModel(client)
 
-    def __create_request(self, payload: dict) -> dict:
-        r = requests.get("http://store.steampowered.com/api/appdetails", params=payload)
-        if r.status_code != 200:
-            raise Exception("App not found")
-
-        app_id = payload["appids"]
-        return r.json()[app_id]["data"]
-
-    def __create_app(self, obj: dict):
-        try:
-            return App(
-                appid=obj["steam_appid"],
-                type=obj["type"],
-                free=obj["is_free"],
-                name=obj["name"],
-                categories=self.__categories(obj["categories"]),
-                genres=self.__genres(obj["genres"]),
-                release_date=self.__release_date(obj["release_date"]["date"]),
-            )
-        except Exception as xcp:
-            xcp.add_note("Error creating app obj for AppId: %s" % obj["steam_appid"])
-            raise xcp
+    def __create_entity(self, app: dict) -> App:
+        return App(
+            appid=app["steam_appid"],
+            type=app["type"],
+            free=app["is_free"],
+            name=app["name"],
+            categories=self.__categories(app["categories"]),
+            genres=self.__genres(app["genres"]),
+            release_date=self.__release_date(app["release_date"]["date"]),
+        )
 
     def __categories(self, cat: list) -> list[AppCategory]:
         cat_list = list()
@@ -65,3 +52,8 @@ class AppRepository(object):
                 pass
 
         raise Exception("No date format available for %s" % date)
+
+    def get_app_info(self, app_id: str) -> App:
+        app = self.app_model.get_app_info(app_id)
+        app_entity = self.__create_entity(app)
+        return app_entity
