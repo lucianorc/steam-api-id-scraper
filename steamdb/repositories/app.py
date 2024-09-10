@@ -13,6 +13,7 @@ class AppRepository(object):
     def __init__(self, client: StoreClient):
         self.app_model = AppModel(client)
 
+    # TODO: Add Generics
     def __create_entity(self, app: dict) -> App:
         if "genres" not in app:
             app["genres"] = list()

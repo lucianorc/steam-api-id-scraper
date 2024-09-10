@@ -12,6 +12,7 @@ class UserRepository(object):
         self.user_model = UserModel(client)
         self.lib_repo = GameLibraryRepository(APIClient())
 
+    # TODO: Add Generics
     def __create_user(self, user: dict) -> User:
         if not "loccountrycode" in user:
             user["loccountrycode"] = None
