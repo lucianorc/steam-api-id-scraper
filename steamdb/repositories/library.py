@@ -17,11 +17,11 @@ class GameLibraryRepository(object):
 
     def __create_game_entity_list(self, games: list) -> list[App]:
         game_entities = list()
-        for game in games[:2]:
+        for game in games:
             app_id = str(game["appid"])
 
             game_entity = self.app_repo.get_app_info(app_id)
-            if game_entity.is_game:
+            if "type" in game and game_entity.is_game:
                 game_entities.append(game_entity)
 
         return game_entities

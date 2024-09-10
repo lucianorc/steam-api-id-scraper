@@ -10,9 +10,12 @@ from steamdb.entities import User
 class UserRepository(object):
     def __init__(self, client: APIClient) -> None:
         self.user_model = UserModel(client)
-        self.lib_repo = GameLibraryRepository(deepcopy(client))
+        self.lib_repo = GameLibraryRepository(APIClient())
 
     def __create_user(self, user: dict) -> User:
+        if not "loccountrycode" in user:
+            user["loccountrycode"] = None
+
         return User(
             steamid=user["steamid"],
             community_visibility_state=user["communityvisibilitystate"],

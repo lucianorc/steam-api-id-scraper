@@ -14,15 +14,24 @@ class AppRepository(object):
         self.app_model = AppModel(client)
 
     def __create_entity(self, app: dict) -> App:
-        return App(
-            appid=app["steam_appid"],
-            type=app["type"],
-            free=app["is_free"],
-            name=app["name"],
-            categories=self.__categories(app["categories"]),
-            genres=self.__genres(app["genres"]),
-            release_date=self.__release_date(app["release_date"]["date"]),
-        )
+        if "genres" not in app:
+            app["genres"] = list()
+
+        if "release_date" not in app:
+            app["release_date"]["date"] = "1 Jan, 1900"
+
+        try:
+            return App(
+                appid=app["steam_appid"],
+                type=app["type"],
+                free=app["is_free"],
+                name=app["name"],
+                categories=self.__categories(app["categories"]),
+                genres=self.__genres(app["genres"]),
+                release_date=self.__release_date(app["release_date"]["date"]),
+            )
+        except Exception as xcp:
+            xcp.add_note(str(app["type"]))
 
     def __categories(self, cat: list) -> list[AppCategory]:
         cat_list = list()

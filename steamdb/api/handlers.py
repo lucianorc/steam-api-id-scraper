@@ -1,15 +1,24 @@
 from dataclasses import dataclass, field
 
-from .client import APIClient
-from steamdb.repositories import AppRepository, LibraryRepository, UserRepository
+from .client import APIClient, StoreClient
+from steamdb.repositories import AppRepository, GameLibraryRepository, UserRepository
+from steamdb.entities import App, User
 
 
-@dataclass
-class Handlers(object):
-    client: APIClient
-    app_repo: AppRepository
-    lib_repo: LibraryRepository
-    user_repo: UserRepository
+class APIHandler(object):
+    def __init__(self) -> None:
+        self.api_client = APIClient()
+        self.store_client = StoreClient()
 
-    def get_app(self, app_id: str):
-        return self.app_repo.app_info(app_id)
+        self.app_repo = AppRepository(self.store_client)
+        self.lib_repo = GameLibraryRepository(self.api_client)
+        self.user_repo = UserRepository(self.api_client)
+
+    def get_app(self, app_id: str) -> App:
+        return self.app_repo.get_app_info(app_id)
+
+    def get_user(self, user_id: str) -> User:
+        return self.user_repo.get_user(user_id)
+
+    def get_many_user(self, user_ids: list[str]) -> User:
+        return self.user_repo.get_many_user(user_ids)
